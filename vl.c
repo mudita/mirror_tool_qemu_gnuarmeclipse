@@ -74,7 +74,7 @@ static QemuThread qemu_irq_thread;
 
 #include <sys/socket.h>
 #include <errno.h>
-#include "IRQ.h"
+#include "irq.h"
 
 #define IRQ_LISTEN_PORT_NUM     (7924)
 #define IRQ_MAX_CONNECTIONS_NUN (1)
