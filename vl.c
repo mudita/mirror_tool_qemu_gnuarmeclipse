@@ -75,6 +75,8 @@ static QemuThread qemu_irq_thread;
 #include <sys/socket.h>
 #include <errno.h>
 #include "hw/irq.h"
+#include "hw/qdev-core.h"
+#include "hw/cortexm/helper.h"
 
 #define IRQ_LISTEN_PORT_NUM     (7924)
 #define IRQ_MAX_CONNECTIONS_NUN (1)
