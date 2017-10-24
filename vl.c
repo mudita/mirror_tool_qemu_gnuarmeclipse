@@ -74,6 +74,7 @@ static QemuThread qemu_irq_thread;
 
 #include <sys/socket.h>
 #include <errno.h>
+#include "IRQ.h"
 
 #define IRQ_LISTEN_PORT_NUM     (7924)
 #define IRQ_MAX_CONNECTIONS_NUN (1)
@@ -96,7 +97,7 @@ static void IrqListen()
         return;
     }
 
-    memset(serv_addr, 0 , sizeof(serv_addr));
+    memset(&serv_addr, 0 , sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = hton(INADDR_ANY);
     serv_addr.sin_port = htons(IRQ_LISTEN_PORT_NUM);
