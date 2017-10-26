@@ -65,4 +65,7 @@ typedef struct
     uint8_t  wordSize;
     void*    data;
 }buffer_header_t;
+
+Object* generic_debug_device_create(Object *parent);
+
 #endif /* PULL_GENERIC_DEVICE_H_ */

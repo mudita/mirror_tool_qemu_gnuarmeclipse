@@ -369,7 +369,7 @@ static void stm32_mcu_realize_callback(DeviceState *dev, Error **errp)
     // UARTS are separate from USARTS
 
     // TODO: add more devices.
-    generic_debug_device_create(cm_state->container);
+    state->generic_debug_device = DEVICE(generic_debug_device_create(cm_state->container));
 }
 
 static int stm32_mcu_reset_object(Object *obj, void *opaque)

@@ -86,6 +86,7 @@ typedef struct STM32MCUState {
     uint32_t hse_freq_hz;
     uint32_t lse_freq_hz;
 
+    DeviceState *generic_debug_device;
     DeviceState *flash;
     DeviceState *pwr;
     DeviceState *exti;
@@ -96,7 +97,6 @@ typedef struct STM32MCUState {
     DeviceState *gpio[STM32_MAX_GPIO];
     int num_gpio;
     DeviceState *usart[STM32_MAX_USART];
-
 } STM32MCUState;
 
 // ------ Public --------------------------------------------------------------
