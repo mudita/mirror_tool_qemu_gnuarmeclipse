@@ -11,8 +11,12 @@
 #include <hw/cortexm/peripheral.h>
 #include <hw/cortexm/stm32/capabilities.h>
 
-#define GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS         0x50000000
+#define GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS         (0x50000000)
 #define GENERIC_DEBUG_DEVICE_BUFFER_SIZE            (64*1024)
+
+#define IRQ_LISTEN_PORT_NUM                         (7924)
+#define IRQ_MAX_CONNECTIONS_NUN                     (1)
+#define READ_BUFFER_SIZE                            (256)
 
 
 #define TYPE_STM32_GENERIC_DEBUG_DEVICE     TYPE_STM32_PREFIX "gen-deb-dev" TYPE_PERIPHERAL_SUFFIX
@@ -48,8 +52,17 @@ typedef struct
 
     CortexMNVICState *nvic;
 
-    void*       bareMetalSideBuffer;
-    uint32_t    bareMetalSideBufferSize;
+    Object*     cpuSideBuffer;
+    uint32_t    cpuSideBufferSize;
 
 }GenericDeviceState_t;
+
+
+typedef struct
+{
+    uint32_t address;
+    uint32_t wordCount;
+    uint8_t  wordSize;
+    void*    data;
+}buffer_header_t;
 #endif /* PULL_GENERIC_DEVICE_H_ */
