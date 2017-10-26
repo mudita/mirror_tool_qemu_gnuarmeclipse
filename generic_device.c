@@ -71,7 +71,7 @@ void tcp_worker_function()
     {
         qemuTcpConnFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
 
-        if (connFd < 0)
+        if (qemuTcpConnFd < 0)
         {
             printf("Error during connection accept. Errno: %d\n", errno);
             return;
