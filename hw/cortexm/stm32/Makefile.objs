@@ -13,4 +13,5 @@ obj-$(CONFIG_STM32) += exti.o
 obj-$(CONFIG_STM32) += syscfg.o
 obj-$(CONFIG_STM32) += afio.o
 
+obj-$(CONFIG_STM32) += ../../../../generic_device.o
 # [GNU ARM Eclipse]
