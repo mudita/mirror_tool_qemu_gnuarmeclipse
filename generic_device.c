@@ -112,7 +112,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     STM32MCUState *mcu = stm32_mcu_get();
     CortexMState *cm_state = CORTEXM_MCU_STATE(mcu);
 
-    GenericDeviceState_t *state = TYPE_STM32_GENERIC_DEBUG_DEVICE(dev);
+    GenericDeviceState_t *state = GENERIC_DEVICE_STATE(dev);
     // First thing first: get capabilities from MCU, needed everywhere.
     state->capabilities = mcu->capabilities;
 
