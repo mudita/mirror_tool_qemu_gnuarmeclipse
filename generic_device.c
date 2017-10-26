@@ -9,6 +9,8 @@
 #include "hw/cortexm/peripheral.h"
 #include "hw/cortexm/nvic.h"
 #include "hw/cortexm/stm32/capabilities.h"
+#include "hw/cortexm/stm32/mcu.h"
+#include "hw/cortexm/mcu.h"
 #include "generic_device.h"
 #include <sys/socket.h>
 #include <errno.h>
