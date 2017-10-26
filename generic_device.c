@@ -7,6 +7,8 @@
 
 #include "qom/object.h"
 #include "hw/cortexm/peripheral.h"
+#include "hw/cortexm/nvic.h"
+#include "hw/cortexm/stm32/capabilities.h"
 #include "generic_device.h"
 #include <sys/socket.h>
 #include <errno.h>
@@ -121,7 +123,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     // TODO: get it from MCU
     cm_object_property_set_bool(obj, true, "is-little-endian");
 
-    peripheral_create_memory_region(obj);
+    peripheral_create_memory_regions(obj);
 
     const char* regi_name = "GEN_DEV";
     Object *reg = cm_object_new(obj, regi_name, TYPE_PERIPHERAL_REGISTER);
