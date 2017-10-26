@@ -66,6 +66,20 @@ typedef struct
     void*    data;
 }buffer_header_t;
 
+void tcp_worker_function();
+
+void generic_debug_device_write_callback();
+
+void generic_debug_device_read_callback();
+
+void generic_debug_device_realize_callback(DeviceState *dev, Error **errp);
+
+void generic_debug_device_instance_init_callback(Object *obj);
+
+void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
+
+void register_debug_device_type();
+
 Object* generic_debug_device_create(Object *parent);
 
 #endif /* PULL_GENERIC_DEVICE_H_ */
