@@ -10,6 +10,7 @@
 
 #include <hw/cortexm/peripheral.h>
 #include <hw/cortexm/stm32/capabilities.h>
+#include "hw/cortexm/nvic.h"
 
 #define GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS         (0x50000000)
 #define GENERIC_DEBUG_DEVICE_BUFFER_SIZE            (64*1024)
