@@ -14,6 +14,7 @@
 #include "hw/cortexm/stm32/capabilities.h"
 #include "hw/cortexm/stm32/mcu.h"
 #include "hw/cortexm/mcu.h"
+#include "hw/cortexm/svd.h"
 #include <sys/socket.h>
 #include <errno.h>
 #include "qemu/thread.h"
@@ -111,6 +112,11 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
         return;
     }
 
+    const char* periphName = "DBG_DEV";
+
+    JSON_Value *value = json_parse_file("/home/konrad/Projects/ecOS/applications/qemu_gnuarmeclipse/pull/generic_device_description.json");
+    JSON_Object *svd_json = json_value_get_object(value);
+
     STM32MCUState *mcu = stm32_mcu_get();
     CortexMState *cm_state = CORTEXM_MCU_STATE(mcu);
 
@@ -122,26 +128,43 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
 
     state->nvic = CORTEXM_NVIC_STATE(cm_state->nvic);
 
-    cm_object_property_set_int(obj, GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, "mmio-address");
-    cm_object_property_set_int(obj, GENERIC_DEBUG_DEVICE_BUFFER_SIZE, "mmio-size-bytes");
+    svd_set_peripheral_address_block(svd_json, periphName, obj);
+    peripheral_create_memory_region(obj);
+
+    // Must be defined before creating registers.
+    cm_object_property_set_int(obj, 4, "register-size-bytes");
     // TODO: get it from MCU
     cm_object_property_set_bool(obj, true, "is-little-endian");
 
-    peripheral_create_memory_region(obj);
+    JSON_Object *periph = svd_get_peripheral_by_name(svd_json, periphName);
+    svd_add_peripheral_properties_and_children(obj, periph, svd_json);
 
-    const char* regi_name = "GEN_DEV";
-    Object *reg = cm_object_new(obj, regi_name, TYPE_PERIPHERAL_REGISTER);
+    const char* str = NULL;
+
+//    str = cm_object_property_get_str_with_parent(obj, "svd-reset-value", NULL);
+//    if (str != NULL) {
+//        uint32_t val32 = (int)strtol(str, NULL, 16);
+//        cm_object_property_set_int(obj, val32, "reset-value");
+//    }
+//
+//    str = cm_object_property_get_str_with_parent(obj, "svd-reset-mask", NULL);
+//    if (str != NULL) {
+//        uint32_t val32 = (int)strtol(str, NULL, 16);
+//        cm_object_property_set_int(obj, val32, "reset-mask");
+//    }
+
+//    str = cm_object_property_get_str_with_parent(obj, "svd-size", NULL);
+//    if (str != NULL)
+//    {
+//        int size_bits = (int)strtol(str, NULL, 16);
+//        cm_object_property_set_int(obj, size_bits, "size-bits");
+//    }
+
+//    str = cm_object_property_get_str_with_parent(obj, "svd-access", NULL);
+//    number = (int)strtol(hexstring, NULL, 16);
 
 
-    // Store a local copy of the node name, for easier access.
-    // Passing a parsed string is ok, it is copied.
-    cm_object_property_set_str(reg, regi_name, "name");
-
-    cm_object_property_set_int(reg, 0x00, "offset-bytes");
-    cm_object_property_set_bool(obj, true, "is-readable");
-    cm_object_property_set_bool(obj, true, "is-writable");
-
-    cm_object_realize(reg);
+    peripheral_prepare_registers(obj);
 
     // Register callbacks.
     peripheral_register_set_post_read(state->cpuSideBuffer,
