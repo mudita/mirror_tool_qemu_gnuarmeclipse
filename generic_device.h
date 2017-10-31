@@ -53,8 +53,11 @@ typedef struct
 
     CortexMNVICState *nvic;
 
-    Object*     cpuSideBuffer;
-    uint32_t    cpuSideBufferSize;
+    Object*     cpuSendRegister;
+    Object*     cpuAddressRegister;
+    Object*     cpuWordSizeRegister;
+    Object*     cpuWordCountRegister;
+    Object*     cpuDataPtrRegister;
 
 }GenericDeviceState_t;
 
@@ -86,6 +89,8 @@ void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
 
 void register_debug_device_type();
+
+void generic_debug_device_set_ram_ptr(MemoryRegion* ram);
 
 Object* generic_debug_device_create(Object *parent);
 

@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include "qemu/thread.h"
+#include "exec/memory.h"
 
 void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
@@ -92,17 +93,28 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
         uint32_t addr, uint32_t offset, unsigned size,
         peripheral_register_t value, peripheral_register_t full_value)
 {
-//    buffer_header_t header;
-//    uint8_t headerSize = sizeof(header.address) + sizeof(header.wordCount) + sizeof(header.wordSize);
-//
-//    GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
-//
-//    int32_t sr = peripheral_register_get_raw_value(state->cpuSideBuffer);
+    buffer_header_t header;
+    uint8_t headerSize = sizeof(header.address) + sizeof(header.wordCount) + sizeof(header.wordSize);
 
-//    memcpy((void*)(&header), (void*)GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, headerSize);
-//    write(qemuTcpConnFd, GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, headerSize + header.wordCount*header.wordSize);
-      write(qemuTcpConnFd, "Odebrano DUPA\n", sizeof("Odebrano DUPA\n"));
+    GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
 
+    uint32_t sr = peripheral_register_get_raw_value(state->cpuSendRegister);
+    header.address = peripheral_register_get_raw_value(state->cpuAddressRegister);
+    header.wordSize = peripheral_register_get_raw_value(state->cpuWordSizeRegister);
+    header.wordCount = peripheral_register_get_raw_value(state->cpuWordCountRegister);
+    header.data = peripheral_register_get_raw_value(state->cpuDataPtrRegister);
+
+    char* data = (char*)malloc(header.wordSize*header.wordCount);
+
+    memcpy(data, &header.address, sizeof(header.address));
+    memcpy(data + 4, &header.wordSize, sizeof(header.wordSize));
+    memcpy(data + 8, &header.wordCount, sizeof(header.wordCount));
+
+    // Get data from the CPU's RAM memory
+    cpu_physical_memory_read(header.data, data + headerSize, header.wordSize*header.wordCount + headerSize);
+
+    write(qemuTcpConnFd, data, headerSize + header.wordCount*header.wordSize);
+    free(data);
 }
 
 void generic_debug_device_read_callback(Object *reg, Object *periph,
@@ -149,12 +161,17 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
 
     peripheral_prepare_registers(obj);
 
-    state->cpuSideBuffer = cm_object_get_child_by_name(obj, "SEND");
+    state->cpuSendRegister = cm_object_get_child_by_name(obj, "SEND");
+    state->cpuAddressRegister = cm_object_get_child_by_name(obj, "ADDRESS");
+    state->cpuWordSizeRegister = cm_object_get_child_by_name(obj, "WORD_SIZE");
+    state->cpuWordCountRegister = cm_object_get_child_by_name(obj, "WORD_COUNT");
+    state->cpuDataPtrRegister = cm_object_get_child_by_name(obj, "DATA_PTR");
+
     // Register callbacks.
-    peripheral_register_set_post_read(state->cpuSideBuffer,
+    peripheral_register_set_post_read(state->cpuSendRegister,
             &generic_debug_device_read_callback);
 
-    peripheral_register_set_post_write(state->cpuSideBuffer,
+    peripheral_register_set_post_write(state->cpuSendRegister,
             &generic_debug_device_write_callback);
 
     tcp_thread_init();
@@ -164,8 +181,7 @@ void generic_debug_device_instance_init_callback(Object *obj)
 {
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(obj);
 
-    state->cpuSideBuffer = NULL;
-    state->cpuSideBufferSize = GENERIC_DEBUG_DEVICE_BUFFER_SIZE;
+    state->cpuSendRegister = NULL;
 }
 
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data)
@@ -180,15 +196,14 @@ void generic_debug_device_class_init_callback(ObjectClass *klass, void *data)
 //    per_class->is_enabled = generic_debug_device_is_enabled;
 }
 
-
 Object* generic_debug_device_create(Object *parent)
 {
     char child_name[10];
     snprintf(child_name, sizeof(child_name) - 1, "GenDebDev");
+
     // Passing a local string is ok.
     Object *genDbgDev = cm_object_new(parent, child_name, TYPE_STM32_GENERIC_DEBUG_DEVICE);
 //    int i;
-
 
     cm_object_realize(genDbgDev);
 
