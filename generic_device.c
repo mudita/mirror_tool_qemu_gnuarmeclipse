@@ -35,15 +35,12 @@ static const TypeInfo generic_debug_device_type_info =
 };
 
 // Thread used to trigger IRQs on the CPU
-static QemuThread qemu_irq_thread;
-int               qemuTcpConnFd;
-static qemu_irq   _generalIrq;
+static QemuThread               qemu_irq_thread;
+int                             qemuTcpConnFd;
+static GenericDeviceState_t*    _genericDevState;
 
 static void tcp_thread_init()
 {
-    // Get the IRQ
-    _generalIrq = qdev_get_gpio_in_named(cm_device_by_name("/machine/mcu/stm32/GPIOA"), "idr-in", 0);
-
     struct sockaddr_in serv_addr;
     int socketFd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -85,7 +82,7 @@ void tcp_worker_function()
         printf("Received data: %s\n", readBuffer);
 
         // Trigger interrupt
-        qemu_set_irq(_generalIrq, 1);
+        cortexm_nvic_set_pending_interrupt(_genericDevState->nvic, STM32F4_01_57_XX_EXTI0_IRQn);
     }
 }
 
@@ -122,7 +119,6 @@ void generic_debug_device_read_callback(Object *reg, Object *periph,
 {
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
 
-    cortexm_nvic_set_pending_interrupt(state->nvic, STM32F4_01_57_XX_EXTI0_IRQn);
 }
 
 void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
@@ -131,8 +127,6 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     if (!cm_device_parent_realize(dev, errp, TYPE_STM32_GENERIC_DEBUG_DEVICE)) {
         return;
     }
-
-    const char* periphName = "DBG_DEV";
 
     JSON_Value *value = json_parse_file("/home/konrad/Projects/ecOS/applications/qemu_gnuarmeclipse/pull/generic_device_description.json");
     JSON_Object *svd_json = json_value_get_object(value);
@@ -147,6 +141,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     Object *obj = OBJECT(dev);
 
     state->nvic = CORTEXM_NVIC_STATE(cm_state->nvic);
+
+    const char* periphName = "DBG_DEV";
 
     svd_set_peripheral_address_block(svd_json, periphName, obj);
     peripheral_create_memory_region(obj);
@@ -173,6 +169,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
 
     peripheral_register_set_post_write(state->cpuSendRegister,
             &generic_debug_device_write_callback);
+
+    _genericDevState = state;
 
     tcp_thread_init();
 }

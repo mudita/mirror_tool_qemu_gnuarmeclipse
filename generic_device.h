@@ -59,6 +59,7 @@ typedef struct
     Object*     cpuWordCountRegister;
     Object*     cpuDataPtrRegister;
 
+    int         irq;
 }GenericDeviceState_t;
 
 
