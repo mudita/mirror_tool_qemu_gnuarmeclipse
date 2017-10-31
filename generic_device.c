@@ -74,12 +74,22 @@ void tcp_worker_function()
 {
     char readBuffer[READ_BUFFER_SIZE];
     memset(readBuffer, 0, sizeof(readBuffer));
+    uint32_t* address = 0;
+    uint32_t wordSize = 0;
+    uint32_t wordCount = 0;
+    uint32_t data = 0;
 
     while (1)
     {
         int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
         readBuffer[readBytesCount] = '\0';
         printf("Received data: %s\n", readBuffer);
+        memcpy(&address, readBuffer, sizeof(uint32_t));
+        memcpy(&wordSize, readBuffer + sizeof(uint32_t), sizeof(uint32_t));
+        memcpy(&wordCount, readBuffer + 2*sizeof(uint32_t), sizeof(uint32_t));
+        memcpy(&data, readBuffer + 3*sizeof(uint32_t), sizeof(uint32_t));
+
+        *address = data;
 
         // Trigger interrupt
         cortexm_nvic_set_pending_interrupt(_genericDevState->nvic, STM32F4_01_57_XX_EXTI0_IRQn);
