@@ -67,11 +67,17 @@ typedef struct
     void*    data;
 }buffer_header_t;
 
+// TODO: MODIFY HERE IN CASE OF ARCHITECTURE CHANGE
+typedef STM32F4_01_57_XX_IRQn_Type GenericDeviceIrq_e;
+
 void tcp_worker_function();
 
-void generic_debug_device_write_callback();
+void generic_debug_device_write_callback(Object *reg, Object *periph,
+        uint32_t addr, uint32_t offset, unsigned size,
+        peripheral_register_t value, peripheral_register_t full_value);
 
-void generic_debug_device_read_callback();
+void generic_debug_device_read_callback(Object *reg, Object *periph,
+        uint32_t addr, uint32_t offset, unsigned size);
 
 void generic_debug_device_realize_callback(DeviceState *dev, Error **errp);
 

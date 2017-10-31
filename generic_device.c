@@ -43,15 +43,6 @@ static void tcp_thread_init()
     // Get the IRQ
     _generalIrq = qdev_get_gpio_in_named(cm_device_by_name("/machine/mcu/stm32/GPIOA"), "idr-in", 0);
 
-    qemu_thread_create(&qemu_irq_thread, "app-irq-thread",
-            (void *(*)(void*)) tcp_worker_function, NULL, 0);
-}
-
-void tcp_worker_function()
-{
-    char readBuffer[READ_BUFFER_SIZE];
-    memset(readBuffer, 0, sizeof(readBuffer));
-
     struct sockaddr_in serv_addr;
     int socketFd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -70,39 +61,56 @@ void tcp_worker_function()
 
     listen(socketFd, IRQ_MAX_CONNECTIONS_NUN);
 
+    qemuTcpConnFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
+    if (qemuTcpConnFd < 0)
+    {
+        printf("Error during connection accept. Errno: %d\n", errno);
+        return;
+    }
+
+    qemu_thread_create(&qemu_irq_thread, "app-irq-thread",
+            (void *(*)(void*)) tcp_worker_function, NULL, 0);
+}
+
+void tcp_worker_function()
+{
+    char readBuffer[READ_BUFFER_SIZE];
+    memset(readBuffer, 0, sizeof(readBuffer));
+
     while (1)
     {
-        qemuTcpConnFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
+        int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
+        readBuffer[readBytesCount] = '\0';
+        printf("Received data: %s\n", readBuffer);
 
-        if (qemuTcpConnFd < 0)
-        {
-            printf("Error during connection accept. Errno: %d\n", errno);
-            return;
-        }
-
-        while (1)
-        {
-            int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
-            readBuffer[readBytesCount] = '\0';
-            printf("Received data: %s\n", readBuffer);
-
-            // Trigger interrupt
-            qemu_set_irq(_generalIrq, 1);
-        }
+        // Trigger interrupt
+        qemu_set_irq(_generalIrq, 1);
     }
 }
 
-void generic_debug_device_write_callback()
+void generic_debug_device_write_callback(Object *reg, Object *periph,
+        uint32_t addr, uint32_t offset, unsigned size,
+        peripheral_register_t value, peripheral_register_t full_value)
 {
-    buffer_header_t header;
-    uint8_t headerSize = sizeof(header.address) + sizeof(header.wordCount) + sizeof(header.wordSize);
-    memcpy((void*)(&header), (void*)GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, headerSize);
-    write(qemuTcpConnFd, GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, headerSize + header.wordCount*header.wordSize);
+//    buffer_header_t header;
+//    uint8_t headerSize = sizeof(header.address) + sizeof(header.wordCount) + sizeof(header.wordSize);
+//
+//    GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
+//
+//    int32_t sr = peripheral_register_get_raw_value(state->cpuSideBuffer);
+
+//    memcpy((void*)(&header), (void*)GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, headerSize);
+//    write(qemuTcpConnFd, GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS, headerSize + header.wordCount*header.wordSize);
+      write(qemuTcpConnFd, "Odebrano DUPA\n", sizeof("Odebrano DUPA\n"));
+
 }
 
-void generic_debug_device_read_callback()
+void generic_debug_device_read_callback(Object *reg, Object *periph,
+        uint32_t addr, uint32_t offset, unsigned size)
 {
+    GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
 
+    cortexm_nvic_set_pending_interrupt(state->nvic, STM32F4_01_57_XX_EXTI0_IRQn);
 }
 
 void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
@@ -139,36 +147,13 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     JSON_Object *periph = svd_get_peripheral_by_name(svd_json, periphName);
     svd_add_peripheral_properties_and_children(obj, periph, svd_json);
 
-    const char* str = NULL;
-
-//    str = cm_object_property_get_str_with_parent(obj, "svd-reset-value", NULL);
-//    if (str != NULL) {
-//        uint32_t val32 = (int)strtol(str, NULL, 16);
-//        cm_object_property_set_int(obj, val32, "reset-value");
-//    }
-//
-//    str = cm_object_property_get_str_with_parent(obj, "svd-reset-mask", NULL);
-//    if (str != NULL) {
-//        uint32_t val32 = (int)strtol(str, NULL, 16);
-//        cm_object_property_set_int(obj, val32, "reset-mask");
-//    }
-
-//    str = cm_object_property_get_str_with_parent(obj, "svd-size", NULL);
-//    if (str != NULL)
-//    {
-//        int size_bits = (int)strtol(str, NULL, 16);
-//        cm_object_property_set_int(obj, size_bits, "size-bits");
-//    }
-
-//    str = cm_object_property_get_str_with_parent(obj, "svd-access", NULL);
-//    number = (int)strtol(hexstring, NULL, 16);
-
-
     peripheral_prepare_registers(obj);
 
+    state->cpuSideBuffer = cm_object_get_child_by_name(obj, "SEND");
     // Register callbacks.
     peripheral_register_set_post_read(state->cpuSideBuffer,
             &generic_debug_device_read_callback);
+
     peripheral_register_set_post_write(state->cpuSideBuffer,
             &generic_debug_device_write_callback);
 
@@ -179,7 +164,7 @@ void generic_debug_device_instance_init_callback(Object *obj)
 {
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(obj);
 
-    state->cpuSideBuffer = GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS;
+    state->cpuSideBuffer = NULL;
     state->cpuSideBufferSize = GENERIC_DEBUG_DEVICE_BUFFER_SIZE;
 }
 
