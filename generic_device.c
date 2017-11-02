@@ -20,6 +20,8 @@
 #include "qemu/thread.h"
 #include "exec/memory.h"
 
+#define STRINGIFY(x)       #x
+
 void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
 
@@ -138,7 +140,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
         return;
     }
 
-    JSON_Value *value = json_parse_file("/home/konrad/Projects/ecOS/applications/qemu_gnuarmeclipse/pull/generic_device_description.json");
+    const char* jsonName = STRINGIFY(EMULATED_DEVICE_JSON);
+    JSON_Value *value = json_parse_file(jsonName);
     JSON_Object *svd_json = json_value_get_object(value);
 
     STM32MCUState *mcu = stm32_mcu_get();
