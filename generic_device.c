@@ -140,7 +140,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
         return;
     }
 
-    const char* jsonName = STRINGIFY(EMULATED_DEVICE_JSON);
+    const char* jsonName = EMULATED_DEVICE_JSON;
     JSON_Value *value = json_parse_file(jsonName);
     JSON_Object *svd_json = json_value_get_object(value);
 
