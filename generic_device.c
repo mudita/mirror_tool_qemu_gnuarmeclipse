@@ -89,7 +89,7 @@ void tcp_worker_function()
         memcpy(&wordCount, readBuffer + 2*sizeof(uint32_t), sizeof(uint32_t));
         memcpy(&data, readBuffer + 3*sizeof(uint32_t), sizeof(uint32_t));
 
-        *address = data;
+//        *address = data;
 
         // Trigger interrupt
         cortexm_nvic_set_pending_interrupt(_genericDevState->nvic, STM32F4_01_57_XX_EXTI0_IRQn);
