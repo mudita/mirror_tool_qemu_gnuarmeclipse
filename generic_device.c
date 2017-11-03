@@ -122,7 +122,9 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     header.wordCount = peripheral_register_get_raw_value(state->cpuWordCountRegister);
     header.data = peripheral_register_get_raw_value(state->cpuDataPtrRegister);
 
-    char* data = (char*)malloc(header.wordSize*header.wordCount);
+    uint16_t dataSize = header.wordSize*header.wordCount + headerSize + 1;
+    char* data = (char*)malloc(dataSize);
+    memset(data, 0 , dataSize);
 
     memcpy(data, &header.address, sizeof(header.address));
     memcpy(data + 4, &header.wordSize, sizeof(header.wordSize));
