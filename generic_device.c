@@ -20,8 +20,6 @@
 #include "qemu/thread.h"
 #include "exec/memory.h"
 
-#define STRINGIFY(x)       #x
-
 void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
 
@@ -213,16 +211,8 @@ Object* generic_debug_device_create(Object *parent)
 
     // Passing a local string is ok.
     Object *genDbgDev = cm_object_new(parent, child_name, TYPE_STM32_GENERIC_DEBUG_DEVICE);
-//    int i;
 
     cm_object_realize(genDbgDev);
-
-//    for (i = 0; i < STM32_GPIO_PIN_COUNT; ++i) {
-//        /* Connect GPIO outgoing to EXTI incoming. */
-//        cm_irq_connect(DEVICE(gpio), STM32_IRQ_GPIO_EXTI_OUT, i,
-//                cm_device_by_name(DEVICE_PATH_STM32_EXTI), STM32_IRQ_EXTI_IN,
-//                i);
-//    }
 
     return genDbgDev;
 }
