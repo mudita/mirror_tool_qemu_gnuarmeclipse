@@ -139,8 +139,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     if (!cm_device_parent_realize(dev, errp, TYPE_STM32_GENERIC_DEBUG_DEVICE)) {
         return;
     }
-
-    const char* jsonName = EMULATED_DEVICE_JSON;
+    const char* jsonName = qemu_find_file(QEMU_FILE_TYPE_DEVICES, "generic_device_description.json");
     JSON_Value *value = json_parse_file(jsonName);
     JSON_Object *svd_json = json_value_get_object(value);
 
