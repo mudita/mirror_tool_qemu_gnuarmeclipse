@@ -19,6 +19,8 @@
 #include <errno.h>
 #include "qemu/thread.h"
 #include "exec/memory.h"
+#include <pthread.h>
+#include <sys/syscall.h>
 
 void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
@@ -66,8 +68,9 @@ static void tcp_thread_init()
         return;
     }
 
-    qemu_thread_create(&qemu_irq_thread, "app-irq-thread",
+    qemu_thread_create(&qemu_irq_thread, "GenDbgTCP",
             (void *(*)(void*)) tcp_worker_function, NULL, 0);
+    pthread_setname_np(qemu_irq_thread.thread, "GenDbgDevTCP");
 }
 
 void tcp_worker_function()
@@ -96,6 +99,14 @@ void tcp_worker_function()
     }
 }
 
+void tcp_write_to_peripheral_server(void* data, uint32_t dataSize)
+{
+    pid_t tid = syscall(SYS_gettid);
+    printf("QEMU Log: Thread ID: %u has sent data via TCP to Peripheral Server\n", tid);
+
+    write(qemuTcpConnFd, data, dataSize);
+}
+
 void generic_debug_device_write_callback(Object *reg, Object *periph,
         uint32_t addr, uint32_t offset, unsigned size,
         peripheral_register_t value, peripheral_register_t full_value)
@@ -120,7 +131,7 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     // Get data from the CPU's RAM memory
     cpu_physical_memory_read(header.data, data + headerSize, header.wordSize*header.wordCount + headerSize);
 
-    write(qemuTcpConnFd, data, headerSize + header.wordCount*header.wordSize);
+    tcp_write_to_peripheral_server(data, headerSize + header.wordCount*header.wordSize);
     free(data);
 }
 
