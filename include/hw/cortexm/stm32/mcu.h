@@ -87,6 +87,7 @@ typedef struct STM32MCUState {
     uint32_t lse_freq_hz;
 
     DeviceState *generic_debug_device;
+
     DeviceState *flash;
     DeviceState *pwr;
     DeviceState *exti;

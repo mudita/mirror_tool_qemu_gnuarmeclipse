@@ -54,28 +54,33 @@ typedef struct
 
     CortexMNVICState *nvic;
 
+    char deviceName[16];
+
     Object*     cpuSendRegister;
     Object*     cpuAddressRegister;
     Object*     cpuWordSizeRegister;
     Object*     cpuWordCountRegister;
     Object*     cpuDataPtrRegister;
 
-    int         peripheralIndex;
+    uint32_t    peripheralIndex;
 }GenericDeviceState_t;
 
 
 typedef struct
 {
+    uint32_t peripheralIndex;
     uint32_t address;
     uint32_t wordCount;
-    uint8_t  wordSize;
-    void*    data;
+    uint32_t wordSize;
+    uint32_t data;
 }buffer_header_t;
 
 extern char peripheralNames[GENERIC_PERIPHERALS_COUNT][16];
 
 // TODO: MODIFY HERE IN CASE OF ARCHITECTURE CHANGE
 typedef STM32F4_01_57_XX_IRQn_Type GenericDeviceIrq_e;
+
+void tcp_thread_init();
 
 void tcp_worker_function();
 

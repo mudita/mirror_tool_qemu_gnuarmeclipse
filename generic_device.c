@@ -57,7 +57,7 @@ static QemuThread               qemu_irq_thread;
 int                             qemuTcpConnFd;
 static CortexMNVICState*        _nvic;
 
-static void tcp_thread_init()
+void tcp_thread_init()
 {
     struct sockaddr_in serv_addr;
     int socketFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -65,6 +65,7 @@ static void tcp_thread_init()
     if (socketFd < 0)
     {
         printf("Error during socket opening. Errno: %d\n", errno);
+        exit(1);
         return;
     }
 
@@ -73,14 +74,28 @@ static void tcp_thread_init()
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(IRQ_LISTEN_PORT_NUM);
 
-    bind(socketFd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    if (bind(socketFd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("QEMU: Could not bind to the socket\n");
+        exit(1);
 
-    listen(socketFd, IRQ_MAX_CONNECTIONS_NUN);
+        return;
+    }
+
+    if (listen(socketFd, IRQ_MAX_CONNECTIONS_NUN) < 0)
+    {
+        printf("Could not listen on the socket\n");
+        exit(1);
+
+        return;
+    }
 
     qemuTcpConnFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
     if (qemuTcpConnFd < 0)
     {
         printf("Error during connection accept. Errno: %d\n", errno);
+        exit(1);
+
         return;
     }
 
@@ -121,7 +136,7 @@ void tcp_worker_function()
         peripheral_register_set_raw_value(peripheralArray[peripheralIndex]->cpuDataPtrRegister, data);
 
         // Trigger interrupt
-        cortexm_nvic_set_pending_interrupt(_nvic, irqNumber);
+        cortexm_nvic_set_pending_interrupt(_nvic, STM32F4_01_57_XX_EXTI0_IRQn);
     }
 }
 
@@ -138,7 +153,7 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
         peripheral_register_t value, peripheral_register_t full_value)
 {
     buffer_header_t header;
-    uint8_t headerSize = sizeof(header.address) + sizeof(header.wordCount) + sizeof(header.wordSize);
+    uint8_t headerSize = sizeof(header);
 
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
 
@@ -156,9 +171,10 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     memcpy(data + 4, &header.address, sizeof(header.address));
     memcpy(data + 8, &header.wordSize, sizeof(header.wordSize));
     memcpy(data + 12, &header.wordCount, sizeof(header.wordCount));
+    memcpy(data + 16, &header.data, sizeof(header.data));
 
     // Get data from the CPU's RAM memory
-    cpu_physical_memory_read(header.data, data + headerSize, header.wordSize*header.wordCount + headerSize);
+    cpu_physical_memory_read(header.data, data + headerSize, header.wordSize*header.wordCount);
 
     tcp_write_to_peripheral_server(data, headerSize + header.wordCount*header.wordSize);
     free(data);
@@ -185,6 +201,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     CortexMState *cm_state = CORTEXM_MCU_STATE(mcu);
 
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(dev);
+
+    printf("Dev Addr: %p\n", dev);
     // First thing first: get capabilities from MCU, needed everywhere.
     state->capabilities = mcu->capabilities;
 
@@ -193,9 +211,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     state->nvic = CORTEXM_NVIC_STATE(cm_state->nvic);
 
     state->peripheralIndex = createdPeripheralCnt;
-    peripheralArray[createdPeripheralCnt] = state;
-    const char* periphName = peripheralNames[createdPeripheralCnt++];
-    printf("Creating Device: %s", periphName);
+    const char* periphName = peripheralNames[createdPeripheralCnt];
+    printf("Creating Device: %s\n", periphName);
 
     svd_set_peripheral_address_block(svd_json, periphName, obj);
     peripheral_create_memory_region(obj);
@@ -210,6 +227,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
 
     peripheral_prepare_registers(obj);
 
+    strcpy(state->deviceName, periphName);
+
     state->cpuSendRegister = cm_object_get_child_by_name(obj, "SEND");
     state->cpuAddressRegister = cm_object_get_child_by_name(obj, "ADDRESS");
     state->cpuWordSizeRegister = cm_object_get_child_by_name(obj, "WORD_SIZE");
@@ -223,9 +242,8 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     peripheral_register_set_post_write(state->cpuSendRegister,
             &generic_debug_device_write_callback);
 
+    peripheralArray[createdPeripheralCnt++] = state;
     _nvic = state->nvic;
-
-    tcp_thread_init();
 }
 
 void generic_debug_device_instance_init_callback(Object *obj)
@@ -249,7 +267,7 @@ void generic_debug_device_class_init_callback(ObjectClass *klass, void *data)
 
 Object* generic_debug_device_create(Object *parent)
 {
-    char child_name[10];
+    char child_name[16];
     snprintf(child_name, sizeof(child_name) - 1, peripheralNames[createdPeripheralCnt]);
 
     // Passing a local string is ok.
