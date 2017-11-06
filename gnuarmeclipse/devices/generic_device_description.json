@@ -80,9 +80,142 @@
         "resetValue": "0x00000000"
       }
     ],
-
     "qemuGroupName": "DBG_DEV"
- }
+ },
+ {
+   "name": "QEMU_SPI1",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40012400",
+   "interrupts": [
+     {
+       "name": "SPI1",
+       "description": "SPI1 global interrupts",
+       "value": "35"
+     }
+   ],
+   "qemuGroupName": "SPI"
+ },
+ {
+   "name": "QEMU_SPI2",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40012800",
+   "interrupts": [
+     {
+       "name": "SPI2",
+       "description": "SPI2 global interrupts",
+       "value": "36"
+     }
+   ],
+   "qemuGroupName": "SPI"
+ },
+ {
+   "name": "QEMU_SPI3",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40012C00",
+   "interrupts": [
+     {
+       "name": "SPI3",
+       "description": "SPI3 global interrupts",
+       "value": "51"
+     }
+   ],
+   "qemuGroupName": "SPI"
+ },
+ {
+   "name": "QEMU_UART1",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40013000",
+   "interrupts": [
+     {
+       "name": "USART1",
+       "description": "USART1 global interrupts",
+       "value": "37"
+     }
+   ],
+   "qemuGroupName": "UART"
+ },
+ {
+   "name": "QEMU_I2S",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40013400",
+   "interrupts": [
+     {
+       "name": "I2S",
+       "description": "ADC2 global interrupts",
+       "value": "18"
+     }
+   ],
+   "qemuGroupName": "I2S"
+ },
+ {
+   "name": "QEMU_GPIO",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40013800",
+   "interrupts": [
+     {
+       "name": "I2S",
+       "description": "ADC2 global interrupts",
+       "value": "18"
+     }
+   ],
+   "qemuGroupName": "GPIO"
+ },
+ {
+   "name": "QEMU_EXTI",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40013C00",
+   "interrupts": [
+     {
+       "name": "EXTI0",
+       "description": "EXTI0 global interrupts",
+       "value": "6"
+     },
+     {
+       "name": "EXTI1",
+       "description": "EXTI1 global interrupts",
+       "value": "7"
+     },
+     {
+       "name": "EXTI2",
+       "description": "EXTI2 global interrupts",
+       "value": "8"
+     },
+     {
+       "name": "EXTI3",
+       "description": "EXTI3 global interrupts",
+       "value": "9"
+     },
+     {
+       "name": "EXTI4",
+       "description": "EXTI4 global interrupts",
+       "value": "10"
+     },
+     {
+       "name": "EXTI9_5",
+       "description": "EXTI9_5 global interrupts",
+       "value": "23"
+     },
+     {
+       "name": "EXTI15_10",
+       "description": "EXTI15_10 global interrupts",
+       "value": "40"
+     },
+   ],
+   "qemuGroupName": "EXTI"
+ },
+ {
+   "name": "QEMU_ADC",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40014000",
+   "interrupts": [
+     {
+       "name": "I2S",
+       "description": "ADC2 global interrupts",
+       "value": "18"
+     }
+   ],
+   "qemuGroupName": "I2S"
+ },
  ]
 }
 }

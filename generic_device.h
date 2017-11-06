@@ -15,10 +15,11 @@
 #define GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS         (0x50000000)
 #define GENERIC_DEBUG_DEVICE_BUFFER_SIZE            (64*1024)
 
+#define GENERIC_PERIPHERALS_COUNT                   9
+
 #define IRQ_LISTEN_PORT_NUM                         (7924)
 #define IRQ_MAX_CONNECTIONS_NUN                     (1)
 #define READ_BUFFER_SIZE                            (256)
-
 
 #define TYPE_STM32_GENERIC_DEBUG_DEVICE     TYPE_STM32_PREFIX "gen-deb-dev" TYPE_PERIPHERAL_SUFFIX
 
@@ -59,7 +60,7 @@ typedef struct
     Object*     cpuWordCountRegister;
     Object*     cpuDataPtrRegister;
 
-    int         irq;
+    int         peripheralIndex;
 }GenericDeviceState_t;
 
 
@@ -70,6 +71,8 @@ typedef struct
     uint8_t  wordSize;
     void*    data;
 }buffer_header_t;
+
+extern char peripheralNames[GENERIC_PERIPHERALS_COUNT][16];
 
 // TODO: MODIFY HERE IN CASE OF ARCHITECTURE CHANGE
 typedef STM32F4_01_57_XX_IRQn_Type GenericDeviceIrq_e;
