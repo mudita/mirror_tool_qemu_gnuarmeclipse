@@ -195,6 +195,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     state->peripheralIndex = createdPeripheralCnt;
     peripheralArray[createdPeripheralCnt] = state;
     const char* periphName = peripheralNames[createdPeripheralCnt++];
+    printf("Creating Device: %s", periphName);
 
     svd_set_peripheral_address_block(svd_json, periphName, obj);
     peripheral_create_memory_region(obj);
