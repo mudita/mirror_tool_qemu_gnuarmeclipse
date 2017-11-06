@@ -202,7 +202,6 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
 
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(dev);
 
-    printf("Dev Addr: %p\n", dev);
     // First thing first: get capabilities from MCU, needed everywhere.
     state->capabilities = mcu->capabilities;
 

@@ -85,7 +85,7 @@
  {
    "name": "QEMU_SPI1",
    "derivedFrom": "DBG_DEV",
-   "baseAddress": "0x40040400",
+   "baseAddress": "0x40012400",
    "qemuGroupName": "SPI"
  },
  {
