@@ -64,7 +64,7 @@ void tcp_thread_init()
 
     if (socketFd < 0)
     {
-        printf("Error during socket opening. Errno: %d\n", errno);
+        printf("QEMU Log: Error during socket opening. Errno: %d\n", errno);
         exit(1);
         return;
     }
@@ -76,7 +76,7 @@ void tcp_thread_init()
 
     if (bind(socketFd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        printf("QEMU: Could not bind to the socket\n");
+        printf("QEMU Log: !ERROR! Could not bind to the socket\n");
         exit(1);
 
         return;
@@ -84,7 +84,7 @@ void tcp_thread_init()
 
     if (listen(socketFd, IRQ_MAX_CONNECTIONS_NUN) < 0)
     {
-        printf("Could not listen on the socket\n");
+        printf("QEMU Log: !ERROR! Could not listen on the socket\n");
         exit(1);
 
         return;
@@ -93,7 +93,7 @@ void tcp_thread_init()
     qemuTcpConnFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
     if (qemuTcpConnFd < 0)
     {
-        printf("Error during connection accept. Errno: %d\n", errno);
+        printf("QEMU Log: Error during connection accept. Errno: %d\n", errno);
         exit(1);
 
         return;
@@ -122,12 +122,12 @@ void tcp_worker_function()
         int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
         if (readBytesCount == 0)
         {
-            printf("QEMU: Peripheral server disconnected. Exiting...");
+            printf("QEMU Log: Peripheral server disconnected. Exiting...");
             exit(1);
         }
 
         readBuffer[readBytesCount] = '\0';
-        printf("Received data: %s\n", readBuffer);
+        printf("QEMU Log: Received data: %s\n", readBuffer);
 
         memcpy(&irqNumber, readBuffer, sizeof(uint32_t));
         memcpy(&peripheralIndex, readBuffer + sizeof(uint32_t), sizeof(uint32_t));
@@ -152,6 +152,7 @@ void tcp_write_to_peripheral_server(void* data, uint32_t dataSize)
     printf("QEMU Log: Thread ID: %u has sent data via TCP to Peripheral Server\n", tid);
 
     write(qemuTcpConnFd, data, dataSize);
+    fsync(qemuTcpConnFd);
 }
 
 void generic_debug_device_write_callback(Object *reg, Object *periph,
@@ -162,6 +163,8 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     uint8_t headerSize = sizeof(header);
 
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
+    PeripheralRegisterState *regState = PERIPHERAL_REGISTER_STATE(reg);
+    printf("QEMU Log: Write callback for \"%s->%s\"\n", state->deviceName, regState->name);
 
     uint32_t sr = peripheral_register_get_raw_value(state->cpuSendRegister);
     header.address = peripheral_register_get_raw_value(state->cpuAddressRegister);
@@ -217,7 +220,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
 
     state->peripheralIndex = createdPeripheralCnt;
     const char* periphName = peripheralNames[createdPeripheralCnt];
-    printf("Creating Device: %s\n", periphName);
+    printf("QEMU Log: Creating Device: %s\n", periphName);
 
     svd_set_peripheral_address_block(svd_json, periphName, obj);
     peripheral_create_memory_region(obj);
