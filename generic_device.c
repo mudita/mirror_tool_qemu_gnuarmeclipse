@@ -82,7 +82,7 @@ void tcp_thread_init()
         return;
     }
 
-    if (listen(socketFd, IRQ_MAX_CONNECTIONS_NUN) < 0)
+    if (listen(socketFd, MAX_PERIPH_SERVER_CONN_NUM) < 0)
     {
         printf("QEMU Log: !ERROR! Could not listen on the socket\n");
         exit(1);
@@ -110,15 +110,13 @@ void tcp_worker_function()
 {
     char readBuffer[READ_BUFFER_SIZE];
     memset(readBuffer, 0, sizeof(readBuffer));
-    uint32_t* address = 0;
-    uint32_t wordSize = 0;
-    uint32_t wordCount = 0;
-    uint32_t data = 0;
-    uint32_t irqNumber = 0;
-    uint32_t peripheralIndex = 0;
+
+    peripheral_response_header_t response;
 
     while (1)
     {
+        memset(&response, 0, sizeof(peripheral_response_header_t));
+
         int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
         if (readBytesCount == 0)
         {
@@ -129,20 +127,15 @@ void tcp_worker_function()
         readBuffer[readBytesCount] = '\0';
         printf("QEMU Log: Received data: %s\n", readBuffer);
 
-        memcpy(&irqNumber, readBuffer, sizeof(uint32_t));
-        memcpy(&peripheralIndex, readBuffer + sizeof(uint32_t), sizeof(uint32_t));
-        memcpy(&address, readBuffer + 2*sizeof(uint32_t), sizeof(uint32_t));
-        memcpy(&wordSize, readBuffer + 3*sizeof(uint32_t), sizeof(uint32_t));
-        memcpy(&wordCount, readBuffer + 4*sizeof(uint32_t), sizeof(uint32_t));
-        memcpy(&data, readBuffer + 5*sizeof(uint32_t), sizeof(uint32_t));
+        memcpy(&response, readBuffer, sizeof(peripheral_response_header_t));
 
-        peripheral_register_set_raw_value(peripheralArray[peripheralIndex]->cpuAddressRegister, address);
-        peripheral_register_set_raw_value(peripheralArray[peripheralIndex]->cpuWordSizeRegister, wordSize);
-        peripheral_register_set_raw_value(peripheralArray[peripheralIndex]->cpuWordCountRegister, wordCount);
-        peripheral_register_set_raw_value(peripheralArray[peripheralIndex]->cpuDataPtrRegister, data);
+        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuAddressRegister, response.address);
+        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuWordSizeRegister, response.wordSize);
+        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuWordCountRegister, response.wordCount);
+        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuDataPtrRegister, response.dataPtr);
 
         // Trigger interrupt
-        cortexm_nvic_set_pending_interrupt(_nvic, STM32F4_01_57_XX_EXTI0_IRQn);
+        cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
     }
 }
 
@@ -171,7 +164,7 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     header.address = peripheral_register_get_raw_value(state->cpuAddressRegister);
     header.wordSize = peripheral_register_get_raw_value(state->cpuWordSizeRegister);
     header.wordCount = peripheral_register_get_raw_value(state->cpuWordCountRegister);
-    header.data = peripheral_register_get_raw_value(state->cpuDataPtrRegister);
+    header.dataPtr = peripheral_register_get_raw_value(state->cpuDataPtrRegister);
 
     uint16_t dataSize = header.wordSize*header.wordCount + sizeof(header) + 1;
     char* data = (char*)malloc(dataSize);
@@ -181,7 +174,7 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
 
 
     // Get data from the CPU's RAM memory
-    cpu_physical_memory_read(header.data, data + sizeof(header), header.wordSize*header.wordCount);
+    cpu_physical_memory_read(header.dataPtr, data + sizeof(header), header.wordSize*header.wordCount);
 
     tcp_write_to_peripheral_server(data, sizeof(header) + header.wordCount*header.wordSize);
     free(data);

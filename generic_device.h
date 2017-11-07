@@ -12,14 +12,11 @@
 #include <hw/cortexm/stm32/capabilities.h>
 #include "hw/cortexm/nvic.h"
 
-#define GENERIC_DEBUG_DEVICE_BUFFER_ADDRESS         (0x50000000)
-#define GENERIC_DEBUG_DEVICE_BUFFER_SIZE            (64*1024)
-
 #define GENERIC_PERIPHERALS_COUNT                   9
 
 #define IRQ_LISTEN_PORT_NUM                         (7924)
-#define IRQ_MAX_CONNECTIONS_NUN                     (1)
-#define READ_BUFFER_SIZE                            (256)
+#define MAX_PERIPH_SERVER_CONN_NUM                  (1)
+#define READ_BUFFER_SIZE                            (1024)
 
 #define TYPE_STM32_GENERIC_DEBUG_DEVICE     TYPE_STM32_PREFIX "gen-deb-dev" TYPE_PERIPHERAL_SUFFIX
 
@@ -75,8 +72,18 @@ typedef struct
     uint32_t address;
     uint32_t wordCount;
     uint32_t wordSize;
-    uint32_t data;
+    uint32_t dataPtr;
 }buffer_header_t;
+
+typedef struct
+{
+    uint32_t peripheralIndex;
+    uint32_t irqNum;
+    uint32_t address;
+    uint32_t wordCount;
+    uint32_t wordSize;
+    uint32_t dataPtr;
+}peripheral_response_header_t;
 
 extern char peripheralNames[GENERIC_PERIPHERALS_COUNT][16];
 
