@@ -91,31 +91,31 @@
  {
    "name": "QEMU_SPI2",
    "derivedFrom": "DBG_DEV",
-   "baseAddress": "0x40040800",
+   "baseAddress": "0x40012800",
    "qemuGroupName": "SPI"
  },
  {
    "name": "QEMU_SPI3",
    "derivedFrom": "DBG_DEV",
-   "baseAddress": "0x40040C00",
+   "baseAddress": "0x40012C00",
    "qemuGroupName": "SPI"
  },
  {
    "name": "QEMU_UART1",
    "derivedFrom": "DBG_DEV",
-   "baseAddress": "0x40041000",
+   "baseAddress": "0x40013000",
    "qemuGroupName": "UART"
  },
  {
    "name": "QEMU_I2S",
    "derivedFrom": "DBG_DEV",
-   "baseAddress": "0x40041400",
+   "baseAddress": "0x40013400",
    "qemuGroupName": "I2S"
  },
  {
    "name": "QEMU_GPIO",
    "derivedFrom": "DBG_DEV",
-   "baseAddress": "0x40041800",
+   "baseAddress": "0x40014C00",
    "qemuGroupName": "GPIO"
  },
  {

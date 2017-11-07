@@ -120,6 +120,12 @@ void tcp_worker_function()
     while (1)
     {
         int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
+        if (readBytesCount == 0)
+        {
+            printf("QEMU: Peripheral server disconnected. Exiting...");
+            exit(1);
+        }
+
         readBuffer[readBytesCount] = '\0';
         printf("Received data: %s\n", readBuffer);
 
