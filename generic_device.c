@@ -129,13 +129,19 @@ void tcp_worker_function()
 
         memcpy(&response, readBuffer, sizeof(peripheral_response_header_t));
 
-        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuAddressRegister, response.address);
-        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuWordSizeRegister, response.wordSize);
-        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuWordCountRegister, response.wordCount);
-        peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuDataPtrRegister, response.dataPtr);
-
-        // Trigger interrupt
-        cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
+        if (peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead)
+        {
+            if (peripheralArray[response.peripheralIndex]->cpuAddressRegister == response.address)
+            {
+                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
+                peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;
+            }
+        }
+        else
+        {
+            // Trigger interrupt
+            cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
+        }
     }
 }
 
@@ -166,6 +172,15 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     header.wordCount = peripheral_register_get_raw_value(state->cpuWordCountRegister);
     header.dataPtr = peripheral_register_get_raw_value(state->cpuDataPtrRegister);
 
+    // Mark the device to be waiting for the response;
+    if(header.isReadRegister)
+    {
+        state->isWaitingForDeviceRead = true;
+    }else
+    {
+        state->isWaitingForDeviceRead = false;
+    }
+
     uint16_t dataSize = header.wordSize*header.wordCount + sizeof(header) + 1;
     char* data = (char*)malloc(dataSize);
     memset(data, 0 , dataSize);
@@ -178,6 +193,12 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
 
     tcp_write_to_peripheral_server(data, sizeof(header) + header.wordCount*header.wordSize);
     free(data);
+
+    while(state->isWaitingForDeviceRead)
+    {
+
+    }
+
 }
 
 void generic_debug_device_read_callback(Object *reg, Object *periph,

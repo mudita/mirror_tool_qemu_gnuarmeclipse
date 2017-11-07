@@ -61,7 +61,7 @@ typedef struct
     Object*     cpuWordCountRegister;
     Object*     cpuDataPtrRegister;
 
-
+    volatile bool isWaitingForDeviceRead;
 }GenericDeviceState_t;
 
 
