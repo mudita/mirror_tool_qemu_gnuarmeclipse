@@ -44,10 +44,19 @@
         "resetValue": "0x00000000"
       },
       {
+        "name": "READ_REGISTER",
+        "displayName": "READ_REGISTER",
+        "description": "READ_REGISTER register",
+        "addressOffset": "0x4",
+        "size": "0x20",
+        "access": "read-write",
+        "resetValue": "0x00000000"
+      },
+      {
         "name": "ADDRESS",
         "displayName": "ADDRESS",
         "description": "ADDRESS register",
-        "addressOffset": "0x4",
+        "addressOffset": "0x8",
         "size": "0x20",
         "access": "read-write",
         "resetValue": "0x00000000"
@@ -56,7 +65,7 @@
         "name": "WORD_SIZE",
         "displayName": "WORD_SIZE",
         "description": "WORD_SIZE register",
-        "addressOffset": "0x8",
+        "addressOffset": "0xC",
         "size": "0x20",
         "access": "read-write",
         "resetValue": "0x00000000"
@@ -65,7 +74,7 @@
         "name": "WORD_COUNT",
         "displayName": "WORD_COUNT",
         "description": "WORD_COUNT register",
-        "addressOffset": "0xC",
+        "addressOffset": "0x10",
         "size": "0x20",
         "access": "read-write",
         "resetValue": "0x00000000"
@@ -74,7 +83,7 @@
         "name": "DATA_PTR",
         "displayName": "DATA_PTR",
         "description": "DATA_PTR register",
-        "addressOffset": "0x10",
+        "addressOffset": "0x14",
         "size": "0x20",
         "access": "read-write",
         "resetValue": "0x00000000"

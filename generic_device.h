@@ -57,18 +57,21 @@ typedef struct
     char deviceName[16];
 
     Object*     cpuSendRegister;
+    uint32_t    peripheralIndex;
+    Object*     cpuIsReadRegister;
     Object*     cpuAddressRegister;
     Object*     cpuWordSizeRegister;
     Object*     cpuWordCountRegister;
     Object*     cpuDataPtrRegister;
 
-    uint32_t    peripheralIndex;
+
 }GenericDeviceState_t;
 
 
 typedef struct
 {
     uint32_t peripheralIndex;
+    uint32_t isReadRegister;
     uint32_t address;
     uint32_t wordCount;
     uint32_t wordSize;

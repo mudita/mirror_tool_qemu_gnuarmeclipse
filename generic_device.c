@@ -160,32 +160,30 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
         peripheral_register_t value, peripheral_register_t full_value)
 {
     buffer_header_t header;
-    uint8_t headerSize = sizeof(header);
 
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
     PeripheralRegisterState *regState = PERIPHERAL_REGISTER_STATE(reg);
     printf("QEMU Log: Write callback for \"%s->%s\"\n", state->deviceName, regState->name);
 
     uint32_t sr = peripheral_register_get_raw_value(state->cpuSendRegister);
+    header.peripheralIndex = state->peripheralIndex;
+    header.isReadRegister = peripheral_register_get_raw_value(state->cpuIsReadRegister);
     header.address = peripheral_register_get_raw_value(state->cpuAddressRegister);
     header.wordSize = peripheral_register_get_raw_value(state->cpuWordSizeRegister);
     header.wordCount = peripheral_register_get_raw_value(state->cpuWordCountRegister);
     header.data = peripheral_register_get_raw_value(state->cpuDataPtrRegister);
 
-    uint16_t dataSize = header.wordSize*header.wordCount + headerSize + 1;
+    uint16_t dataSize = header.wordSize*header.wordCount + sizeof(header) + 1;
     char* data = (char*)malloc(dataSize);
     memset(data, 0 , dataSize);
 
-    memcpy(data, &(state->peripheralIndex), sizeof(state->peripheralIndex));
-    memcpy(data + 4, &header.address, sizeof(header.address));
-    memcpy(data + 8, &header.wordSize, sizeof(header.wordSize));
-    memcpy(data + 12, &header.wordCount, sizeof(header.wordCount));
-    memcpy(data + 16, &header.data, sizeof(header.data));
+    memcpy(data, &header, sizeof(header));
+
 
     // Get data from the CPU's RAM memory
-    cpu_physical_memory_read(header.data, data + headerSize, header.wordSize*header.wordCount);
+    cpu_physical_memory_read(header.data, data + sizeof(header), header.wordSize*header.wordCount);
 
-    tcp_write_to_peripheral_server(data, headerSize + header.wordCount*header.wordSize);
+    tcp_write_to_peripheral_server(data, sizeof(header) + header.wordCount*header.wordSize);
     free(data);
 }
 
@@ -193,7 +191,6 @@ void generic_debug_device_read_callback(Object *reg, Object *periph,
         uint32_t addr, uint32_t offset, unsigned size)
 {
     GenericDeviceState_t *state = GENERIC_DEVICE_STATE(periph);
-
 }
 
 void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
@@ -238,6 +235,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     strcpy(state->deviceName, periphName);
 
     state->cpuSendRegister = cm_object_get_child_by_name(obj, "SEND");
+    state->cpuIsReadRegister = cm_object_get_child_by_name(obj, "READ_REGISTER");
     state->cpuAddressRegister = cm_object_get_child_by_name(obj, "ADDRESS");
     state->cpuWordSizeRegister = cm_object_get_child_by_name(obj, "WORD_SIZE");
     state->cpuWordCountRegister = cm_object_get_child_by_name(obj, "WORD_COUNT");
