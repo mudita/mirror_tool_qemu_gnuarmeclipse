@@ -78,57 +78,6 @@ static QemuThread qemu_irq_thread;
 #include "hw/qdev-core.h"
 #include "hw/cortexm/helper.h"
 
-#define IRQ_LISTEN_PORT_NUM     (7924)
-#define IRQ_MAX_CONNECTIONS_NUN (1)
-#define READ_BUFFER_SIZE        (256)
-static qemu_irq _generalIrq;
-
-static void IrqListen()
-{
-    struct sockaddr_in serv_addr;
-    int socketFd = socket(AF_INET, SOCK_STREAM, 0);
-    char readBuffer[READ_BUFFER_SIZE];
-    memset(readBuffer, 0, sizeof(readBuffer));
-
-    // Get the IRQ
-    _generalIrq = qdev_get_gpio_in_named(cm_device_by_name("/machine/mcu/stm32/GPIOA"), "idr-in", 0);
-
-    if (socketFd < 0)
-    {
-        printf("Error during socket opening. Errno: %d\n", errno);
-        return;
-    }
-
-    memset(&serv_addr, 0 , sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(IRQ_LISTEN_PORT_NUM);
-
-    bind(socketFd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-
-    listen(socketFd, IRQ_MAX_CONNECTIONS_NUN);
-    while (1)
-    {
-        int connFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
-
-        if (connFd < 0)
-        {
-            printf("Error during connection accept. Errno: %d\n", errno);
-            return;
-        }
-
-        while (1)
-        {
-            int readBytesCount = read(connFd, readBuffer, READ_BUFFER_SIZE);
-            readBuffer[readBytesCount] = '\0';
-            printf("Received data: %s\n", readBuffer);
-
-            // Trigger interrupt
-            qemu_set_irq(_generalIrq, 1);
-        }
-    }
-}
-
 int main(int argc, char **argv)
 {
     int code;
@@ -5105,8 +5054,6 @@ int main(int argc, char **argv, char **envp)
 #if !defined(CONFIG_GNU_ARM_ECLIPSE)
     audio_init();
 #endif
-    qemu_thread_create(&qemu_irq_thread, "app-irq-thread",
-            (void *(*)(void*)) IrqListen, NULL, 0);
     
     cpu_synchronize_all_post_init();
 
