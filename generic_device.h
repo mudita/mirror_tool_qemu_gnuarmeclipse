@@ -12,6 +12,9 @@
 #include <hw/cortexm/stm32/capabilities.h>
 #include "hw/cortexm/nvic.h"
 
+extern bool genericPeripheralServerUsed;
+extern int  qemuTcpConnFd;
+
 #define GENERIC_PERIPHERALS_COUNT                   9
 
 #define IRQ_LISTEN_PORT_NUM                         (7924)

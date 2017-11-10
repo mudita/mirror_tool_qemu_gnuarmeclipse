@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include "generic_device.h"
 #include "qemu/osdep.h"
 #include "qemu-version.h"
 #include "qemu/cutils.h"
@@ -69,9 +70,6 @@ static int app_main(void)
 static QemuThread app_main_thread;
 #endif
 
-// Thread used to trigger IRQs on the CPU
-static QemuThread qemu_irq_thread;
-
 #include <sys/socket.h>
 #include <errno.h>
 #include "hw/irq.h"
@@ -111,6 +109,11 @@ int main(int argc, char **argv)
     cortexm_graphic_quit();
 
     qemu_log_mask(LOG_FUNC, "%s() done.\n", __FUNCTION__);
+
+    if (genericPeripheralServerUsed)
+    {
+        shutdown(qemuTcpConnFd, 2);
+    }
 
     exit(code);
 }
@@ -2263,8 +2266,11 @@ typedef struct QEMUOption {
     uint32_t arch_mask;
 } QEMUOption;
 
+#define PERIPHERAL_SERVER_OPTION -1
+
 static const QEMUOption qemu_options[] = {
     { "h", 0, QEMU_OPTION_h, QEMU_ARCH_ALL },
+    { "with-peripheral-server", 0, PERIPHERAL_SERVER_OPTION, QEMU_ARCH_ALL},
 #if defined(CONFIG_VERBOSE)
     { "verbose", 0, QEMU_OPTION_verbose, QEMU_ARCH_ALL },
 #endif
@@ -3545,6 +3551,11 @@ int main(int argc, char **argv, char **envp)
                 exit(1);
             }
             switch(popt->index) {
+            case PERIPHERAL_SERVER_OPTION:
+            {
+                genericPeripheralServerUsed = true;
+                break;
+            }
             case QEMU_OPTION_no_kvm_irqchip: {
                 olist = qemu_find_opts("machine");
                 qemu_opts_parse_noisily(olist, "kernel_irqchip=off", false);
