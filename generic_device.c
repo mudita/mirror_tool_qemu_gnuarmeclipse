@@ -39,6 +39,8 @@ char peripheralNames[GENERIC_PERIPHERALS_COUNT][16] =
         "QEMU_ADC"
 };
 
+bool genericPeripheralServerUsed = false;
+
 GenericDeviceState_t* peripheralArray[GENERIC_PERIPHERALS_COUNT];
 
 static const TypeInfo generic_debug_device_type_info =
