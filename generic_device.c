@@ -21,6 +21,7 @@
 #include "exec/memory.h"
 #include <pthread.h>
 #include <sys/syscall.h>
+#include <netinet/tcp.h>
 
 void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
@@ -69,6 +70,18 @@ void tcp_thread_init()
         printf("QEMU Log: Error during socket opening. Errno: %d\n", errno);
         exit(1);
         return;
+    }
+
+    int flag = 1;
+    int result = setsockopt(socketFd,            /* socket affected */
+                            IPPROTO_TCP,     /* set option at TCP level */
+                            TCP_NODELAY,     /* name of option */
+                            (char *) &flag,  /* the cast is historical
+                                                    cruft */
+                            sizeof(int));    /* length of option value */
+    if (result < 0)
+    {
+        printf("QEMU Log: !ERROR! Could not set the socket in TCP_NODELAY mode");
     }
 
     memset(&serv_addr, 0 , sizeof(serv_addr));
