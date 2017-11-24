@@ -140,7 +140,19 @@ void tcp_worker_function()
         }
 
         readBuffer[readBytesCount] = '\0';
-        printf("QEMU Log: Received data: %s\n", readBuffer);
+        printf("QEMU Log: Received data:\n"
+                "peripheralIndex: %d\n"
+                "irqNum: %d\n"
+                "address: 0x%X\n"
+                "wordCount: %d\n"
+                "wordSize: %d\n",
+                "data: %d",
+                response.peripheralIndex,
+                response.irqNum,
+                response.address,
+                response.wordCount,
+                response.wordSize,
+                readBuffer + sizeof(peripheral_response_header_t));
 
         memcpy(&response, readBuffer, sizeof(peripheral_response_header_t));
 
