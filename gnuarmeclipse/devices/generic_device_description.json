@@ -87,6 +87,15 @@
         "size": "0x20",
         "access": "read-write",
         "resetValue": "0x00000000"
+      },
+      {
+        "name": "READ_VALUE",
+        "displayName": "READ_VALUE",
+        "description": "READ_VALUE register",
+        "addressOffset": "0x18",
+        "size": "0x20",
+        "access": "read",
+        "resetValue": "0x00000000"
       }
     ],
     "qemuGroupName": "DBG_DEV"
@@ -138,6 +147,12 @@
    "derivedFrom": "DBG_DEV",
    "baseAddress": "0x40042000",
    "qemuGroupName": "I2S"
+ },
+ {
+   "name": "QEMU_RTC",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40042400",
+   "qemuGroupName": "RTC"
  }
  ]
 }

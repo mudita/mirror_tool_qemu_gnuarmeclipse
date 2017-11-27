@@ -37,7 +37,8 @@ char peripheralNames[GENERIC_PERIPHERALS_COUNT][16] =
         "QEMU_I2S",
         "QEMU_GPIO",
         "QEMU_EXTI",
-        "QEMU_ADC"
+        "QEMU_ADC",
+        "QEMU_RTC"
 };
 
 bool genericPeripheralServerUsed = false;
@@ -123,6 +124,7 @@ void tcp_thread_init()
 
 void tcp_worker_function()
 {
+    int readBytesCount = 0;
     char readBuffer[READ_BUFFER_SIZE];
     memset(readBuffer, 0, sizeof(readBuffer));
 
@@ -132,7 +134,7 @@ void tcp_worker_function()
     {
         memset(&response, 0, sizeof(peripheral_response_header_t));
 
-        int readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
+        readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
         if (readBytesCount == 0)
         {
             printf("QEMU Log: Peripheral server disconnected. Exiting...");
@@ -140,27 +142,30 @@ void tcp_worker_function()
         }
 
         readBuffer[readBytesCount] = '\0';
-        printf("QEMU Log: Received data:\n"
+        memcpy(&response, readBuffer, sizeof(peripheral_response_header_t));
+
+        printf("QEMU Log: Received data: %d bytes\n"
                 "peripheralIndex: %d\n"
                 "irqNum: %d\n"
                 "address: 0x%X\n"
                 "wordCount: %d\n"
                 "wordSize: %d\n",
                 "data: %d",
+                readBytesCount,
                 response.peripheralIndex,
                 response.irqNum,
                 response.address,
                 response.wordCount,
                 response.wordSize,
-                readBuffer + sizeof(peripheral_response_header_t));
-
-        memcpy(&response, readBuffer, sizeof(peripheral_response_header_t));
+                *(readBuffer + sizeof(peripheral_response_header_t)));
 
         if (peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead)
         {
-            if (peripheralArray[response.peripheralIndex]->cpuAddressRegister == response.address)
+            if (peripheralArray[response.peripheralIndex]->readingRegAddress == response.address)
             {
-                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
+                uint64_t regValue = *(readBuffer + sizeof(peripheral_response_header_t));
+//                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
+                peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuReadValueRegister, regValue);
                 peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;
             }
         }
@@ -203,9 +208,11 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
     if(header.isReadRegister)
     {
         state->isWaitingForDeviceRead = true;
+        state->readingRegAddress = header.address;
     }else
     {
         state->isWaitingForDeviceRead = false;
+        state->readingRegAddress = NULL;
     }
 
     uint16_t dataSize = header.wordSize*header.wordCount + sizeof(header) + 1;
@@ -281,6 +288,7 @@ void generic_debug_device_realize_callback(DeviceState *dev, Error **errp)
     state->cpuWordSizeRegister = cm_object_get_child_by_name(obj, "WORD_SIZE");
     state->cpuWordCountRegister = cm_object_get_child_by_name(obj, "WORD_COUNT");
     state->cpuDataPtrRegister = cm_object_get_child_by_name(obj, "DATA_PTR");
+    state->cpuReadValueRegister = cm_object_get_child_by_name(obj, "READ_VALUE");
 
     // Register callbacks.
     peripheral_register_set_post_read(state->cpuSendRegister,
