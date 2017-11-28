@@ -163,7 +163,8 @@ void tcp_worker_function()
         {
             if (peripheralArray[response.peripheralIndex]->readingRegAddress == response.address)
             {
-                uint64_t regValue = *(readBuffer + sizeof(peripheral_response_header_t));
+                uint64_t regValue = 0;
+                memcpy(&regValue, readBuffer + sizeof(peripheral_response_header_t), response.wordSize);
 //                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
                 peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuReadValueRegister, regValue);
                 peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;

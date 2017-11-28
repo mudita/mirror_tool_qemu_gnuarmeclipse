@@ -15,7 +15,7 @@
 extern bool genericPeripheralServerUsed;
 extern int  qemuTcpConnFd;
 
-#define GENERIC_PERIPHERALS_COUNT                   9
+#define GENERIC_PERIPHERALS_COUNT                   10
 
 #define IRQ_LISTEN_PORT_NUM                         (7924)
 #define MAX_PERIPH_SERVER_CONN_NUM                  (1)
