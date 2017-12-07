@@ -15,7 +15,7 @@
 extern bool genericPeripheralServerUsed;
 extern int  qemuTcpConnFd;
 
-#define GENERIC_PERIPHERALS_COUNT                   10
+#define GENERIC_PERIPHERALS_COUNT                   11
 
 #define IRQ_LISTEN_PORT_NUM                         (7924)
 #define MAX_PERIPH_SERVER_CONN_NUM                  (1)
@@ -90,7 +90,7 @@ typedef struct
     uint32_t dataPtr;
 }peripheral_response_header_t;
 
-extern char peripheralNames[GENERIC_PERIPHERALS_COUNT][16];
+extern char peripheralNames[GENERIC_PERIPHERALS_COUNT][32];
 
 // TODO: MODIFY HERE IN CASE OF ARCHITECTURE CHANGE
 typedef STM32F4_01_57_XX_IRQn_Type GenericDeviceIrq_e;

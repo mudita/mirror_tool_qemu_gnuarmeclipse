@@ -153,6 +153,12 @@
    "derivedFrom": "DBG_DEV",
    "baseAddress": "0x40042400",
    "qemuGroupName": "RTC"
+ },
+ {
+   "name": "QEMU_TOUCH_SCREEN",
+   "derivedFrom": "DBG_DEV",
+   "baseAddress": "0x40042800",
+   "qemuGroupName": "SCREEN"
  }
  ]
 }

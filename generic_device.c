@@ -27,7 +27,7 @@ void generic_debug_device_instance_init_callback(Object *obj);
 void generic_debug_device_class_init_callback(ObjectClass *klass, void *data);
 
 uint16_t createdPeripheralCnt = 0;
-char peripheralNames[GENERIC_PERIPHERALS_COUNT][16] =
+char peripheralNames[GENERIC_PERIPHERALS_COUNT][32] =
 {
         "DBG_DEV",
         "QEMU_SPI1",
@@ -38,7 +38,8 @@ char peripheralNames[GENERIC_PERIPHERALS_COUNT][16] =
         "QEMU_GPIO",
         "QEMU_EXTI",
         "QEMU_ADC",
-        "QEMU_RTC"
+        "QEMU_RTC",
+        "QEMU_TOUCH_SCREEN"
 };
 
 bool genericPeripheralServerUsed = false;
@@ -164,7 +165,7 @@ void tcp_worker_function()
             if (peripheralArray[response.peripheralIndex]->readingRegAddress == response.address)
             {
                 uint64_t regValue = 0;
-                memcpy(&regValue, readBuffer + sizeof(peripheral_response_header_t), response.wordSize);
+                memcpy(&regValue, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
 //                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
                 peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuReadValueRegister, regValue);
                 peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;
