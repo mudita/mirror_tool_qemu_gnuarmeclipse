@@ -127,6 +127,7 @@ void tcp_worker_function()
 {
     int readBytesCount = 0;
     char readBuffer[READ_BUFFER_SIZE];
+    char *curBufIndex = readBuffer;
     memset(readBuffer, 0, sizeof(readBuffer));
 
     peripheral_response_header_t response;
@@ -143,39 +144,55 @@ void tcp_worker_function()
         }
 
         readBuffer[readBytesCount] = '\0';
-        memcpy(&response, readBuffer, sizeof(peripheral_response_header_t));
+        curBufIndex = readBuffer;
 
-        printf("QEMU Log: Received data: %d bytes\n"
-                "peripheralIndex: %d\n"
-                "irqNum: %d\n"
-                "address: 0x%X\n"
-                "wordCount: %d\n"
-                "wordSize: %d\n",
-                "data: %d",
-                readBytesCount,
-                response.peripheralIndex,
-                response.irqNum,
-                response.address,
-                response.wordCount,
-                response.wordSize,
-                *(readBuffer + sizeof(peripheral_response_header_t)));
-
-        if (peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead)
+        do
         {
-            if (peripheralArray[response.peripheralIndex]->readingRegAddress == response.address)
+            memcpy(&response, curBufIndex, sizeof(peripheral_response_header_t));
+
+            printf("QEMU Log: Received data: %d bytes\n"
+                    "peripheralIndex: %d\n"
+                    "irqNum: %d\n"
+                    "address: 0x%X\n"
+                    "wordCount: %d\n"
+                    "wordSize: %d\n",
+                    "data: %d",
+                    readBytesCount,
+                    response.peripheralIndex,
+                    response.irqNum,
+                    response.address,
+                    response.wordCount,
+                    response.wordSize,
+                    *(curBufIndex + sizeof(peripheral_response_header_t)));
+
+            if (peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead)
             {
-                uint64_t regValue = 0;
-                memcpy(&regValue, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
-//                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
-                peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuReadValueRegister, regValue);
-                peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;
+                if (peripheralArray[response.peripheralIndex]->readingRegAddress == response.address)
+                {
+                    uint64_t regValue = 0;
+                    memcpy(&regValue, curBufIndex + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
+    //                cpu_physical_memory_write(response.address, readBuffer + sizeof(peripheral_response_header_t), response.wordSize*response.wordCount);
+                    peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuReadValueRegister, regValue);
+                    peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;
+                }
             }
-        }
-        else
-        {
-            // Trigger interrupt
-            cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
-        }
+            else
+            {
+                // Trigger interrupt
+                cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
+            }
+
+            if (readBytesCount > (response.wordCount * response.wordSize + sizeof(response)))
+            {
+                readBytesCount -= sizeof(response);
+                curBufIndex += sizeof(response);
+            }
+            else
+            {
+                break;
+            }
+
+        } while (1);
     }
 }
 
@@ -217,7 +234,7 @@ void generic_debug_device_write_callback(Object *reg, Object *periph,
         state->readingRegAddress = NULL;
     }
 
-    uint16_t dataSize = header.wordSize*header.wordCount + sizeof(header) + 1;
+    uint32_t dataSize = header.wordSize*header.wordCount + sizeof(header) + 1;
     char* data = (char*)malloc(dataSize);
     memset(data, 0 , dataSize);
 
