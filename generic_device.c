@@ -139,34 +139,36 @@ void tcp_worker_function()
         readBytesCount = read(qemuTcpConnFd, readBuffer, READ_BUFFER_SIZE);
         if (readBytesCount == 0)
         {
-            printf("QEMU Log: Peripheral server disconnected. Exiting...");
+            printf("QEMU Log: Peripheral server disconnected. Exiting...\n");
             exit(1);
         }
 
-        readBuffer[readBytesCount] = '\0';
-        curBufIndex = readBuffer;
 
+        //readBuffer[readBytesCount] = '\0';
+        curBufIndex = readBuffer;
+        printf("--------------------------------\n");
+        printf("QEMU Log: Received data: %d bytes\n", readBytesCount);
         do
         {
             memcpy(&response, curBufIndex, sizeof(peripheral_response_header_t));
 
-            printf("QEMU Log: Received data: %d bytes\n"
-                    "peripheralIndex: %d\n"
-                    "irqNum: %d\n"
-                    "address: 0x%X\n"
-                    "wordCount: %d\n"
-                    "wordSize: %d\n",
-                    "data: %d",
-                    readBytesCount,
+            printf( "peripheralIndex: %d\n"
+                    "irqNum: %u\n"
+                    "address: %p\n"
+                    "wordCount: %u\n"
+                    "wordSize: %u\n",
                     response.peripheralIndex,
                     response.irqNum,
                     response.address,
                     response.wordCount,
-                    response.wordSize,
-                    *(curBufIndex + sizeof(peripheral_response_header_t)));
+                    response.wordSize);
 
             if (peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead)
             {
+                printf("Reading the register of the peripheral. Address expected: %p, address received: %p\n",
+                        peripheralArray[response.peripheralIndex]->readingRegAddress,
+                        response.address);
+
                 if (peripheralArray[response.peripheralIndex]->readingRegAddress == response.address)
                 {
                     uint64_t regValue = 0;
@@ -175,17 +177,27 @@ void tcp_worker_function()
                     peripheral_register_set_raw_value(peripheralArray[response.peripheralIndex]->cpuReadValueRegister, regValue);
                     peripheralArray[response.peripheralIndex]->isWaitingForDeviceRead = false;
                 }
+                else
+                {
+                    printf("Interrupt triggering: %d\n", response.irqNum);
+                    // Trigger interrupt
+                    cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
+                }
             }
             else
             {
+                printf("Interrupt triggering: %d\n", response.irqNum);
                 // Trigger interrupt
                 cortexm_nvic_set_pending_interrupt(_nvic, response.irqNum);
             }
 
-            if (readBytesCount > (response.wordCount * response.wordSize + sizeof(response)))
+            if (readBytesCount > ((response.wordCount * response.wordSize) + sizeof(response)))
             {
-                readBytesCount -= sizeof(response);
-                curBufIndex += sizeof(response);
+                printf("There are more messages in the packet!\n");
+                printf("+++++++++++++++++++++++++\n");
+
+                readBytesCount -= (sizeof(response) + (response.wordCount * response.wordSize));
+                curBufIndex += (sizeof(response) + (response.wordCount * response.wordSize));
             }
             else
             {
@@ -193,6 +205,9 @@ void tcp_worker_function()
             }
 
         } while (1);
+
+        printf("#############################\n");
+
     }
 }
 
