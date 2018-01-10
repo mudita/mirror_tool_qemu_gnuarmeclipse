@@ -62,12 +62,15 @@ static QemuThread               qemu_irq_thread;
 int                             qemuTcpConnFd;
 static CortexMNVICState*        _nvic;
 
+
+
+
 void tcp_thread_init()
 {
     struct sockaddr_in serv_addr;
-    int socketFd = socket(AF_INET, SOCK_STREAM, 0);
+    qemuTcpConnFd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (socketFd < 0)
+    if (qemuTcpConnFd < 0)
     {
         printf("QEMU Log: Error during socket opening. Errno: %d\n", errno);
         exit(1);
@@ -75,7 +78,7 @@ void tcp_thread_init()
     }
 
     int flag = 1;
-    int result = setsockopt(socketFd,            /* socket affected */
+    int result = setsockopt(qemuTcpConnFd,            /* socket affected */
                             IPPROTO_TCP,     /* set option at TCP level */
                             TCP_NODELAY,     /* name of option */
                             (char *) &flag,  /* the cast is historical
@@ -91,30 +94,22 @@ void tcp_thread_init()
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(IRQ_LISTEN_PORT_NUM);
 
-    if (bind(socketFd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    printf("QEMU LOG: Waiting for connection with peripheral server\n");
+
+    do
     {
-        printf("QEMU Log: !ERROR! Could not bind to the socket\n");
-        exit(1);
+        if(connect(qemuTcpConnFd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        {
+            sleep(1);   // If error
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }while (1);
 
-        return;
-    }
-
-    if (listen(socketFd, MAX_PERIPH_SERVER_CONN_NUM) < 0)
-    {
-        printf("QEMU Log: !ERROR! Could not listen on the socket\n");
-        exit(1);
-
-        return;
-    }
-
-    qemuTcpConnFd = accept(socketFd, (struct sockaddr*)NULL, NULL);
-    if (qemuTcpConnFd < 0)
-    {
-        printf("QEMU Log: Error during connection accept. Errno: %d\n", errno);
-        exit(1);
-
-        return;
-    }
+    printf("QEMU LOG: Connected to the peripheral server\n");
 
     qemu_thread_create(&qemu_irq_thread, "GenDbgTCP",
             (void *(*)(void*)) tcp_worker_function, NULL, 0);
