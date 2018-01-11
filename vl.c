@@ -2590,6 +2590,7 @@ char *qemu_find_file(int type, const char *name)
 
     for (i = 0; i < data_dir_idx; i++) {
 
+        printf("Searching for JSON file in: %s/%s%s\n", data_dir[i], subdir, name);
 #if defined(CONFIG_GNU_ARM_ECLIPSE)
 #if defined(CONFIG_WIN32)
         buf = g_strdup_printf("%s\\%s%s", data_dir[i], subdir, name);
